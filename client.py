@@ -99,6 +99,7 @@ class RemotingProxy(object):
 
 class RemotingClient(RemotingProxy):
 	def __init__(self, server_address):
+		RemotingProxy.__init__(self)
 		self._logger = logging.getLogger('client.%s:%s' % server_address)
 		self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self._socket.connect(server_address)

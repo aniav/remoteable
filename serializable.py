@@ -5,6 +5,8 @@ class UnknownSerialError(ConstructionError):
 	pass
 
 class Serializable(object):
+	serial = None
+	
 	_registry = {} 
 	# each immediate subclass should define its own registry
 	
@@ -17,9 +19,6 @@ class Serializable(object):
 		raise NotImplementedError(cls)
 
 	def data(self):
-		raise NotImplementedError(self)
-
-	def interpret(self, proxy):
 		raise NotImplementedError(self)
 
 	def serialized(self):

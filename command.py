@@ -6,13 +6,6 @@ from remoteable.serializable import Serializable
 class Command(Serializable):
 	_registry = {}
 
-	@classmethod
-	def build(cls, data):
-		raise NotImplementedError(cls)
-	
-	def data(self):
-		raise NotImplementedError(self)
-	
 	def execute(self, server):
 		raise NotImplementedError(self)
 
@@ -26,6 +19,7 @@ class FetchCommand(Command):
 	serial = 'fetch'
 
 	def __init__(self, name):
+		Command.__init__(self)
 		self._name = name
 
 	@classmethod
@@ -48,6 +42,7 @@ class StoreCommand(Command):
 	serial = 'store'
 
 	def __init__(self, obj):
+		Command.__init__(self)
 		self._obj = obj
 
 	@classmethod
@@ -70,6 +65,7 @@ class GetAttributeCommand(Command):
 	serial = 'get'
 
 	def __init__(self, id, name):
+		Command.__init__(self)
 		self._id = id
 		self._name = name
 
@@ -103,6 +99,7 @@ class SetAttributeCommand(Command):
 	serial = 'set'
 
 	def __init__(self, id, name, value):
+		Command.__init__(self)
 		self._id = id
 		self._name = name
 		self._value = value
@@ -148,6 +145,7 @@ class OperatorCommand(Command):
 	}
 
 	def __init__(self, id, other, variant):
+		Command.__init__(self)
 		self._id = id
 		self._other = other
 		self._variant = variant
@@ -178,6 +176,8 @@ class OperatorCommand(Command):
 			return OperationErrorResponse(ex)
 		try:
 			result = operator(obj, resolved_other)
+		#pylint: disable=W0703
+		# all exception should be caught and returned to client
 		except Exception as ex:
 			return ExecutionErrorResponse(ex)
 		id = server.store(result)
@@ -189,6 +189,7 @@ class ExecuteCommand(Command):
 	serial = 'execute'
 
 	def __init__(self, id, args, kwargs):
+		Command.__init__(self)
 		self._id = id
 		self._args = args
 		self._kwargs = kwargs
@@ -223,6 +224,8 @@ class ExecuteCommand(Command):
 			unwrapped_kwargs[key] = value.server_value(server)
 		try:
 			result = obj(*unwrapped_args, **unwrapped_kwargs)
+		#pylint: disable=W0703
+		# all exception should be caught and returned to client
 		except Exception as ex:
 			return ExecutionErrorResponse(ex)
 		id = server.store(result)
@@ -234,6 +237,7 @@ class EvaluateCommand(Command):
 	serial = 'evaluate'
 
 	def __init__(self, id, variant):
+		Command.__init__(self)
 		self._id = id
 		self._variant = variant
 
@@ -260,6 +264,7 @@ class ReleaseCommand(Command):
 	serial = 'release'
 
 	def __init__(self, id):
+		Command.__init__(self)
 		self._id = id
 
 	def data(self):

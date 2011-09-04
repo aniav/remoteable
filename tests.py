@@ -1,3 +1,5 @@
+# pylint: disable=C0103,R0904,W0201
+
 import unittest
 
 import logging
@@ -8,14 +10,14 @@ from remoteable.client import RemotingClient
 
 class TestClass(object):
 	def __init__(self, value):
-		self._value = value
+		self.value = value
 	
-	def value(self):
-		return self._value
+	def get_value(self):
+		return self.value
 	
 	def method(self, arg):
-		self._value += arg
-		return self._value
+		self.value += arg
+		return self.value
 
 import random
 
@@ -36,8 +38,8 @@ class Test(unittest.TestCase):
 		local_object = TestClass(base)
 		self.server.export(local_object, remote_name = remote_name)
 		remote_object = self.client.fetch(remote_name)
-		result = remote_object._value # Meat
-		self.assertEqual(local_object._value, int(result))
+		result = remote_object.value # Meat
+		self.assertEqual(local_object.value, int(result))
 
 	def test_set_attribute(self):
 		base = 20
@@ -48,8 +50,8 @@ class Test(unittest.TestCase):
 		remote_object = self.client.fetch(remote_name)
 		remote_object.value = modified  # Meat
 		remote_object_2 = self.client.fetch(remote_name)
-		self.assertEqual(local_object._value, int(remote_object._value))
-		self.assertEqual(int(remote_object_2._value), int(remote_object._value))
+		self.assertEqual(local_object.value, int(remote_object.value))
+		self.assertEqual(int(remote_object_2.value), int(remote_object.value))
 
 	def test_attribute_remote_handle(self):
 		base = 20
@@ -59,7 +61,8 @@ class Test(unittest.TestCase):
 		self.server.export(local_object, remote_name = remote_name)
 		remote_object = self.client.fetch(remote_name)
 		result = remote_object.__getattr__(attribute_name)
-		self.assertEqual(local_object._value, int(result))
+			# getattr(remote_object, attribute_name) requires attribute_name to be string
+		self.assertEqual(local_object.value, int(result))
 
 	def test_method(self):
 		base = 20
@@ -117,9 +120,8 @@ class Test(unittest.TestCase):
 		remote_object = self.client.fetch(remote_name)
 		#del remote_object
 		remote_object.__del__()
-		#self.assertRaises(KeyError, remote_object.method)
-		# TODO test if server is wiped
+		self.assertRaises(KeyError, remote_object)
+		# test if server is wiped
 
 if __name__ == "__main__":
-	#import sys;sys.argv = ['', 'Test.testName']
 	unittest.main()

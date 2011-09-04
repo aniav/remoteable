@@ -1,21 +1,16 @@
-
 import uuid
 
+from types import NoneType
+
+from remoteable.client import RemoteHandle
 from remoteable.serializable import Serializable
 
 class Capsule(Serializable):
 	_registry = {} 
 
 	@classmethod
-	def build(cls, data):
+	def can_wrap(cls, object_class):
 		raise NotImplementedError(cls)
-
-	def data(self):
-		raise NotImplementedError(self)
-	
-	@classmethod
-	def can_wrap(self, object_class):
-		raise NotImplementedError(self)
 	
 	@classmethod
 	def wrap(cls, obj):
@@ -28,22 +23,24 @@ class Capsule(Serializable):
 		raise NotImplementedError(self)
 	
 	def server_value(self, server):
-		raise NotImplementedError(cls)
+		raise NotImplementedError(self)
 
 class HandleCapsule(Capsule):
 	serial = 'handle'
 	
 	def __init__(self, id):
+		Capsule.__init__(self)
 		self._id = id
 	
 	@classmethod
 	def can_wrap(cls, object_class):
-		from remoteable.client import RemoteHandle
 		return issubclass(object_class, RemoteHandle)
 	
 	@classmethod
 	def wrap(cls, obj):
-		return HandleCapsule(obj._id) # TODO Not exactly right 
+		# pylint: disable=W0212
+		# HandleCapsule is priviledged to access RemoteHandle _id
+		return HandleCapsule(obj._id)
 	
 	@classmethod
 	def build(cls, data):
@@ -68,6 +65,7 @@ class RawCapsule(Capsule):
 	}
 
 	def __init__(self, value, variant):
+		Capsule.__init__(self)
 		self._variant = variant
 		self._value = value
 
@@ -100,22 +98,20 @@ class RawCapsule(Capsule):
 	
 	def server_value(self, _server):
 		return self._value
-	
+
 class NoneCapsule(Capsule):
 	serial = 'none'
 
-	def __init__(self):
-		pass
-
 	@classmethod
 	def can_wrap(cls, object_class):
-		from types import NoneType
 		return issubclass(object_class, NoneType)
 	
 	@classmethod
 	def wrap(cls, _obj):
 		return NoneCapsule()
 	
+	# pylint: disable=R0801
+	# same as remoteable.response.EmptyResponse, but these are not related
 	@classmethod
 	def build(cls, _data):
 		return cls()

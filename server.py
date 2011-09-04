@@ -5,8 +5,12 @@ import uuid
 
 from remoteable.command import Command
 
-
 class RemotingActual(object):
+	def __init__(self, name):
+		self._logger = logging.getLogger("remoting.actual.%s" % name)
+		self._exports = {}
+		self._references = {}
+
 	def process(self, data):
 		self._logger.debug("received: %s", data)
 		command = Command.construct(data)
@@ -66,9 +70,7 @@ import socket
 
 class RemotingServer(RemotingActual):
 	def __init__(self, server_address):
-		self._logger = logging.getLogger("remoting.server.%s:%s" % server_address)
-		self._exports = {}
-		self._references = {}
+		RemotingActual.__init__(str(server_address))
 		self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self._socket.bind(server_address)
@@ -95,5 +97,5 @@ class RemotingServer(RemotingActual):
 
 class ThreadedRemotingServer(RemotingServer, Thread):
 	def __init__(self, server_address):
-		Thread.__init__(self, name = 'RemotingServer')
+		Thread.__init__(self, name = 'RemotingServer.%s:%s' % server_address)
 		RemotingServer.__init__(self, server_address)
