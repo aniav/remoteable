@@ -6,39 +6,6 @@ import socket
 import logging
 import json
 
-class RemotingProxy(object):
-	def __init__(self, server_address):
-		self._logger = logging.getLogger('proxy.%s:%s' % server_address)
-		self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self._socket.connect(server_address)
-
-	def fetch(self, name):
-		command = FetchCommand(name)
-		response = command.push(self)
-		return response.interpret(self)
-
-	def store(self, obj):
-		command = StoreCommand(Capsule.wrap(obj))
-		response = command.push(self)
-		return response.interpret(self)
-
-	def handle(self, id):
-		return RemoteHandle(self, id)
-	
-	def request(self, data):
-		self._logger.debug("Sending %s", data)
-		self._socket.send(json.dumps(data))
-		result = json.loads(self._socket.recv(65535))
-		self._logger.debug("Received %s", result)
-		return result
-
-	def __del__(self):
-		self._socket.close()
-	
-	def __str__(self):
-		return "<RemotingProxy (%s)>" % (self._socket,)
-	__repr__ = __str__
-
 from remoteable.command import ExecuteCommand, GetAttributeCommand, SetAttributeCommand, OperatorCommand, EvaluateCommand, ReleaseCommand 
 
 class RemoteHandle(object):
@@ -101,3 +68,49 @@ class RemoteHandle(object):
 		
 	def __repr__(self):
 		return "<RemoteHandle (%s)>" % (self._id,)
+
+class RemotingProxy(object):
+	def fetch(self, name):
+		command = FetchCommand(name)
+		response = command.push(self)
+		return response.interpret(self)
+
+	def store(self, obj):
+		command = StoreCommand(Capsule.wrap(obj))
+		response = command.push(self)
+		return response.interpret(self)
+
+	def handle(self, id):
+		return RemoteHandle(self, id)
+	
+	def request(self, data):
+		self.send(data)
+		result = self.receive()
+		return result
+
+	def send(self, data):
+		raise NotImplementedError(self)
+	
+	def receive(self):
+		raise NotImplementedError(self)
+
+	def __repr__(self):
+		return "<%s>" % (self.__class__.__name__)
+
+class RemotingClient(RemotingProxy):
+	def __init__(self, server_address):
+		self._logger = logging.getLogger('client.%s:%s' % server_address)
+		self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self._socket.connect(server_address)
+
+	def send(self, data):
+		self._logger.debug("Sending %s", data)
+		self._socket.send(json.dumps(data))
+	
+	def receive(self):
+		result = json.loads(self._socket.recv(65535))
+		self._logger.debug("Received %s", result)
+		return result
+
+	def __repr__(self):
+		return "<%s socket(%s)>" % (self.__class__.__name__, self._socket)

@@ -3,8 +3,8 @@ import unittest
 import logging
 logging.basicConfig(level = logging.DEBUG)
 
-from remoteable.server import RemotingServer
-from remoteable.client import RemotingProxy
+from remoteable.server import ThreadedRemotingServer
+from remoteable.client import RemotingClient
 
 class TestClass(object):
 	def __init__(self, value):
@@ -17,19 +17,17 @@ class TestClass(object):
 		self._value += arg
 		return self._value
 
-from threading import Thread 
 import random
 
 class Test(unittest.TestCase):
 	def setUp(self):
 		address = ('localhost', random.randint(2000, 20000))
-		self.server = RemotingServer(address)
-		self.thread = Thread(name = 'RemotingServerThread', target = self.server.start)
-		self.thread.start()
-		self.client = RemotingProxy(address)
+		self.server = ThreadedRemotingServer(address)
+		self.server.start()
+		self.client = RemotingClient(address)
 
 	def tearDown(self):
-		if self.thread.isAlive():
+		if self.server.isAlive():
 			self.server.stop()
 
 	def test_attribute(self):

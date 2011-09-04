@@ -36,9 +36,9 @@ First, we need to setup a *server*, a remoting provider, where all the objects w
 	
 Server will immediately bind and listen on specified host/port pair, but it won't accept connections. It needs to be started::
 
-	server.start()
+	server.run()
 	
-This call will block. Other threads can stop the server by calling ``server.stop``.
+This call will block. Other threads can stop the server by calling ``server.stop``. If you want a background server, use ThreadedRemotingServer, which inherits Thread.
 
 Let us create some class instances::
 
@@ -58,8 +58,8 @@ Any kind of object can be exported::
 
 Next step to use these objects is to setup client::
 
-	from remoteable.client import RemotingProxy
-	client = RemotingProxy(('localhost', 3000))
+	from remoteable.client import RemotingClient
+	client = RemotingClient(('localhost', 3000))
 
 Client will immediately connect and will be ready to fetch handles::
 

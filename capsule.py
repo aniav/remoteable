@@ -113,7 +113,7 @@ class NoneCapsule(Capsule):
 		return issubclass(object_class, NoneType)
 	
 	@classmethod
-	def wrap(cls, obj):
+	def wrap(cls, _obj):
 		return NoneCapsule()
 	
 	@classmethod
