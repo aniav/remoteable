@@ -50,7 +50,7 @@ class EvaluationResponse(Response):
 		}
 
 	def interpret(self, proxy):
-		return self._value.client_value(proxy)
+		return self._value.proxy_value(proxy)
 
 class EmptyResponse(Response):
 	serial = 'empty'

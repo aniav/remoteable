@@ -9,6 +9,8 @@ import json
 from remoteable.command import ExecuteCommand, GetAttributeCommand, SetAttributeCommand, OperatorCommand, EvaluateCommand, ReleaseCommand 
 
 class RemoteHandle(object):
+	__slots__ = ('_proxy', '_id')
+	
 	def __init__(self, proxy, id):
 		self._proxy = proxy
 		self._id = id
@@ -105,12 +107,12 @@ class RemotingClient(RemotingProxy):
 		self._socket.connect(server_address)
 
 	def send(self, data):
-		self._logger.debug("Sending %s", data)
+		self._logger.debug("sending %s", data)
 		self._socket.send(json.dumps(data))
 	
 	def receive(self):
 		result = json.loads(self._socket.recv(65535))
-		self._logger.debug("Received %s", result)
+		self._logger.debug("received %s", result)
 		return result
 
 	def __repr__(self):

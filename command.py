@@ -6,7 +6,7 @@ from remoteable.serializable import Serializable
 class Command(Serializable):
 	_registry = {}
 
-	def execute(self, server):
+	def execute(self, actual):
 		raise NotImplementedError(self)
 
 	def push(self, proxy):
@@ -29,9 +29,9 @@ class FetchCommand(Command):
 	def data(self):
 		return {'name': self._name}
 	
-	def execute(self, server):
+	def execute(self, actual):
 		try:
-			id = server.fetch(self._name)
+			id = actual.fetch(self._name)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		return HandleResponse(id)
@@ -52,9 +52,9 @@ class StoreCommand(Command):
 	def data(self):
 		return {'data': self._obj.serialized()}
 	
-	def execute(self, server):
+	def execute(self, actual):
 		try:
-			id = server.store(self._obj.server_value(server))
+			id = actual.store(self._obj.actual_value(actual))
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		return HandleResponse(id)
@@ -79,20 +79,20 @@ class GetAttributeCommand(Command):
 	def build(cls, data):
 		return cls(uuid.UUID(hex = data['id']), Capsule.construct(data['name']))
 
-	def execute(self, server):
+	def execute(self, actual):
 		try:
-			obj = server.access(self._id)
+			obj = actual.access(self._id)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		try:
-			resolved_name = self._name.server_value(server)
+			resolved_name = self._name.actual_value(actual)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		try:
 			result = getattr(obj, resolved_name)
 		except AttributeError, ex:
 			return AttributeErrorResponse(ex)
-		id = server.store(result)
+		id = actual.store(result)
 		return HandleResponse(id)
 
 class SetAttributeCommand(Command):
@@ -115,17 +115,17 @@ class SetAttributeCommand(Command):
 	def build(cls, data):
 		return cls(uuid.UUID(hex = data['id']), Capsule.construct(data['name']), Capsule.construct(data['value']))
 
-	def execute(self, server):
+	def execute(self, actual):
 		try:
-			obj = server.access(self._id)
+			obj = actual.access(self._id)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		try:
-			resolved_name = self._name.server_value(server)
+			resolved_name = self._name.actual_value(actual)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		try:
-			resolved_value = self._value.server_value(server)
+			resolved_value = self._value.actual_value(actual)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		try:
@@ -161,13 +161,13 @@ class OperatorCommand(Command):
 	def build(cls, data):
 		return cls(uuid.UUID(hex = data['id']), Capsule.construct(data['other']), data['variant'])
 
-	def execute(self, server):
+	def execute(self, actual):
 		try:
-			obj = server.access(self._id)
+			obj = actual.access(self._id)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		try:
-			resolved_other = self._other.server_value(server)
+			resolved_other = self._other.actual_value(actual)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		try:
@@ -180,7 +180,7 @@ class OperatorCommand(Command):
 		# all exception should be caught and returned to client
 		except Exception as ex:
 			return ExecutionErrorResponse(ex)
-		id = server.store(result)
+		id = actual.store(result)
 		return HandleResponse(id)
 
 from remoteable.response import ExecutionErrorResponse
@@ -213,22 +213,22 @@ class ExecuteCommand(Command):
 			wrapped_kwargs[key] = Capsule.construct(value)
 		return cls(uuid.UUID(hex = data['id']), wrapped_args, wrapped_kwargs)
 
-	def execute(self, server):
+	def execute(self, actual):
 		try:
-			obj = server.access(self._id)
+			obj = actual.access(self._id)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
-		unwrapped_args = [arg.server_value(server) for arg in self._args]
+		unwrapped_args = [arg.actual_value(actual) for arg in self._args]
 		unwrapped_kwargs = {}
 		for key, value in self._kwargs:
-			unwrapped_kwargs[key] = value.server_value(server)
+			unwrapped_kwargs[key] = value.actual_value(actual)
 		try:
 			result = obj(*unwrapped_args, **unwrapped_kwargs)
 		#pylint: disable=W0703
 		# all exception should be caught and returned to client
 		except Exception as ex:
 			return ExecutionErrorResponse(ex)
-		id = server.store(result)
+		id = actual.store(result)
 		return HandleResponse(id)
 
 from remoteable.response import EvaluationResponse
@@ -251,9 +251,9 @@ class EvaluateCommand(Command):
 	def build(cls, data):
 		return cls(uuid.UUID(hex = data['id']), data['variant'])
 
-	def execute(self, server):
+	def execute(self, actual):
 		try:
-			obj = server.access(self._id)
+			obj = actual.access(self._id)
 		except KeyError as ex:
 			return AccessErrorResponse(ex)
 		return EvaluationResponse(Capsule.wrap(obj), self._variant)
@@ -276,9 +276,9 @@ class ReleaseCommand(Command):
 	def build(cls, data):
 		return cls(uuid.UUID(hex = data['id']))
 
-	def execute(self, server):
+	def execute(self, actual):
 		try:
-			server.release(self._id)
+			actual.release(self._id)
 		except KeyError as ex:
 			return AccessErrorResponse(ex)
 		return EmptyResponse()

@@ -57,7 +57,7 @@ class Test(unittest.TestCase):
 		base = 20
 		remote_name = 'obj'
 		local_object = TestClass(base)
-		attribute_name = self.client.store('_value')
+		attribute_name = self.client.store('value')
 		self.server.export(local_object, remote_name = remote_name)
 		remote_object = self.client.fetch(remote_name)
 		result = remote_object.__getattr__(attribute_name)
@@ -72,7 +72,7 @@ class Test(unittest.TestCase):
 		self.server.export(local_object, remote_name = remote_name)
 		remote_object = self.client.fetch(remote_name)
 		result = remote_object.method(addition) # Meat
-		self.assertEqual(local_object.value(), int(result))
+		self.assertEqual(local_object.get_value(), int(result))
 
 	def test_method_remote_handle(self):
 		base = 20
@@ -82,8 +82,8 @@ class Test(unittest.TestCase):
 		self.server.export(local_object, remote_name = remote_name)
 		remote_object = self.client.fetch(remote_name)
 		result = remote_object.method(addition) # Meat
-		self.assertEqual(local_object.value(), int(result))
-		self.assertEqual(result, local_object.value())
+		self.assertEqual(local_object.get_value(), int(result))
+		self.assertEqual(result, local_object.get_value())
 
 	def test_equality(self):
 		value = 20
@@ -97,7 +97,7 @@ class Test(unittest.TestCase):
 		local_object = TestClass(base)
 		self.server.export(local_object, remote_name = remote_name)
 		remote_object = self.client.fetch(remote_name)
-		result = remote_object.value() # Meat
+		result = remote_object.get_value() # Meat
 		self.assertEqual(int(result), base)
 		self.assertEqual(str(result), str(base))
 

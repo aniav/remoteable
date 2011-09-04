@@ -2,7 +2,6 @@ import uuid
 
 from types import NoneType
 
-from remoteable.client import RemoteHandle
 from remoteable.serializable import Serializable
 
 class Capsule(Serializable):
@@ -19,10 +18,10 @@ class Capsule(Serializable):
 				return subclass.wrap(obj)
 		raise TypeError(obj.__class__)
 		
-	def client_value(self, proxy):
+	def proxy_value(self, proxy):
 		raise NotImplementedError(self)
 	
-	def server_value(self, server):
+	def actual_value(self, actual):
 		raise NotImplementedError(self)
 
 class HandleCapsule(Capsule):
@@ -34,6 +33,7 @@ class HandleCapsule(Capsule):
 	
 	@classmethod
 	def can_wrap(cls, object_class):
+		from remoteable.client import RemoteHandle
 		return issubclass(object_class, RemoteHandle)
 	
 	@classmethod
@@ -49,11 +49,11 @@ class HandleCapsule(Capsule):
 	def data(self):
 		return {'id': self._id.hex}
 
-	def client_value(self, proxy):
+	def proxy_value(self, proxy):
 		return proxy.handle(self._id)
 	
-	def server_value(self, server):
-		return server.access(self._id)
+	def actual_value(self, actual):
+		return actual.access(self._id)
 
 class RawCapsule(Capsule):
 	serial = 'raw'
@@ -93,10 +93,10 @@ class RawCapsule(Capsule):
 			'variant': self._variant 
 		}
 
-	def client_value(self, _proxy):
+	def proxy_value(self, _proxy):
 		return self._value
 	
-	def server_value(self, _server):
+	def actual_value(self, _actual):
 		return self._value
 
 class NoneCapsule(Capsule):
@@ -119,10 +119,10 @@ class NoneCapsule(Capsule):
 	def data(self):
 		return {}
 	
-	def client_value(self, _proxy):
+	def proxy_value(self, _proxy):
 		return None
 	
-	def server_value(self, _server):
+	def actual_value(self, _actual):
 		return None
 
 HandleCapsule.register()

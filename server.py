@@ -7,7 +7,7 @@ from remoteable.command import Command
 
 class RemotingActual(object):
 	def __init__(self, name):
-		self._logger = logging.getLogger("remoting.actual.%s" % name)
+		self._logger = logging.getLogger("actual.%s" % name)
 		self._exports = {}
 		self._references = {}
 
@@ -70,7 +70,7 @@ import socket
 
 class RemotingServer(RemotingActual):
 	def __init__(self, server_address):
-		RemotingActual.__init__(str(server_address))
+		RemotingActual.__init__(self, "%s.%s" % server_address)
 		self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self._socket.bind(server_address)
