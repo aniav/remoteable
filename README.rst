@@ -2,7 +2,7 @@
  remoteable
 ============
 
-This library provides remoting in python-friendly way. It allows user to create a server, which holds and manage objects, and a client, which can remotely act upon those objects.
+This library provides remoting in python-friendly way. It allows user to create a server, which holds and manages objects, and a client, which can remotely act upon these objects.
 
 **Warning** this is still work-in-progress, but no API changes are foreseen.
 
