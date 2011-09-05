@@ -59,7 +59,7 @@ class StoreCommand(Command):
 			return AccessErrorResponse(ex)
 		return HandleResponse(id)
 
-from remoteable.response import AttributeErrorResponse
+from remoteable.response import ErrorResponse # TODO
 
 class GetCommand(Command):
 	def __init__(self, id, name):
@@ -92,8 +92,8 @@ class GetCommand(Command):
 			return AccessErrorResponse(ex)
 		try:
 			result = self.getter(obj, resolved_name)
-		except AttributeError, ex:
-			return AttributeErrorResponse(ex)
+		except Exception, ex: # TODO
+			return ErrorResponse(ex)
 		id = actual.store(result)
 		return HandleResponse(id)
 
@@ -149,8 +149,8 @@ class SetCommand(Command):
 			return AccessErrorResponse(ex)
 		try:
 			self.setter(obj, resolved_name, resolved_value)
-		except AttributeError, ex:
-			return AttributeErrorResponse(ex)
+		except Exception, ex: # TODO
+			return ErrorResponse(ex)
 		return EmptyResponse()
 
 class SetAttributeCommand(SetCommand):
