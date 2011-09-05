@@ -6,7 +6,7 @@ import socket
 import logging
 import json
 
-from remoteable.command import ExecuteCommand, GetAttributeCommand, SetAttributeCommand, OperatorCommand, EvaluateCommand, ReleaseCommand 
+from remoteable.command import ExecuteCommand, GetAttributeCommand, SetAttributeCommand, GetItemCommand, SetItemCommand, OperatorCommand, EvaluateCommand, ReleaseCommand 
 
 class RemoteHandle(object):
 	__slots__ = ('_proxy', '_id')
@@ -14,6 +14,11 @@ class RemoteHandle(object):
 	def __init__(self, proxy, id):
 		self._proxy = proxy
 		self._id = id
+
+	def __iter__(self):
+		command = EvaluateCommand(self._id, 'list')
+		response = command.push(self._proxy)
+		return iter(response.interpret(self._proxy))
 
 	def __int__(self):
 		command = EvaluateCommand(self._id, 'int')
@@ -32,6 +37,11 @@ class RemoteHandle(object):
 		response = command.push(self._proxy)
 		return str(response.interpret(self._proxy))		
 
+	def __unicode__(self):
+		command = EvaluateCommand(self._id, 'unicode')
+		response = command.push(self._proxy)
+		return str(response.interpret(self._proxy))		
+
 	def __eq__(self, other):
 		command = OperatorCommand(self._id, Capsule.wrap(other), 'equals')
 		response = command.push(self._proxy)
@@ -43,11 +53,17 @@ class RemoteHandle(object):
 		return response.interpret(self._proxy)	
 
 	def __call__(self, *args, **kwargs):
-		capsuled_args = [Capsule.wrap(arg) for arg in args]
-		capsuled_kwargs = {}
-		for key, value in kwargs:
-			capsuled_kwargs[key] = Capsule.wrap(value)
-		command = ExecuteCommand(self._id, capsuled_args, capsuled_kwargs)
+		command = ExecuteCommand(self._id, Capsule.wrap(args), Capsule.wrap(kwargs))
+		response = command.push(self._proxy)
+		return response.interpret(self._proxy)
+
+	def __getitem__(self, key):
+		command = GetItemCommand(self._id, Capsule.wrap(key))
+		response = command.push(self._proxy)
+		return response.interpret(self._proxy)
+
+	def __setitem__(self, key, value):
+		command = SetItemCommand(self._id, Capsule.wrap(key), Capsule.wrap(value))
 		response = command.push(self._proxy)
 		return response.interpret(self._proxy)
 

@@ -56,41 +56,29 @@ class HandleCapsule(Capsule):
 		return actual.access(self._id)
 
 class RawCapsule(Capsule):
-	serial = 'raw'
+	handled = object
+	# need definition in subclasses
+	
+	@classmethod
+	def can_wrap(cls, object_class):
+		return issubclass(object_class, cls.handled)
 
-	serializator = {
-		'int': int,
-		'str': str,
-		'bool': bool,
-	}
+	@classmethod
+	def wrap(cls, obj):
+		return cls(obj)
 
-	def __init__(self, value, variant):
+	def __init__(self, value):
 		Capsule.__init__(self)
-		self._variant = variant
 		self._value = value
 
 	@classmethod
-	def can_wrap(cls, object_class):
-		return issubclass(object_class, tuple(cls.serializator.values()))
-	
-	@classmethod
-	def wrap(cls, obj):
-		for name, type in cls.serializator.iteritems():
-			if isinstance(obj, type):
-				return RawCapsule(obj, name)
-	
-	@classmethod
 	def build(cls, data):
-		variant = data['variant']
-		deserialize = cls.serializator[variant]
-		value = deserialize(data['data'])
-		return cls(value, variant)
+		value = cls.handled(data['data'])
+		return cls(value)
 
 	def data(self):
-		serialize = self.serializator[self._variant]
 		return {
-			'data': serialize(self._value),
-			'variant': self._variant 
+			'data': self.handled(self._value),
 		}
 
 	def proxy_value(self, _proxy):
@@ -98,6 +86,83 @@ class RawCapsule(Capsule):
 	
 	def actual_value(self, _actual):
 		return self._value
+
+
+class IntegerCapsule(RawCapsule):
+	serial = 'integer'
+	handled = int
+
+class StringCapsule(RawCapsule):
+	serial = 'string'
+	handled = str
+
+class UnicodeCapsule(RawCapsule):
+	serial = 'unicode'
+	handled = unicode
+
+class BooleanCapsule(RawCapsule):
+	serial = 'boolean'
+	handled = bool
+
+class IterativeCapsule(RawCapsule):
+	@classmethod
+	def build(cls, data):
+		value = cls.handled([Capsule.construct(i) for i in data['data']])
+		return cls(value)
+
+	def data(self):
+		return {
+			'data': [Capsule.wrap(i).serialized() for i in self._value],
+		}
+
+	def proxy_value(self, proxy):
+		return self.handled([i.proxy_value(proxy) for i in self._value])
+	
+	def actual_value(self, actual):
+		return self.handled([i.actual_value(actual) for i in self._value])
+
+class ListCapsule(IterativeCapsule):
+	serial = 'list'
+	handled = list
+
+class TupleCapsule(IterativeCapsule):
+	serial = 'tuple'
+	handled = tuple
+
+class SetCapsule(IterativeCapsule):
+	serial = 'set'
+	handled = set
+
+class DictionaryCapsule(RawCapsule):
+	serial = 'dictionary'
+	handled = dict
+
+	@classmethod
+	def build(cls, data):
+		built = cls.handled()
+		for key, value in data['data'].iteritems():
+			built[key] = Capsule.construct(value)
+		return cls(built)
+
+	def data(self):
+		data = {}
+		for key, value in self._value.iteritems():
+			data[key] = Capsule.wrap(value).serialized()
+		return {
+			'data': data,
+		}
+
+	def proxy_value(self, proxy):
+		evaluated = self.handled()
+		for key, value in self._value.iteritems():
+			evaluated[key] = value.proxy_value(proxy)
+		return evaluated
+	
+	def actual_value(self, actual):
+		evaluated = self.handled()
+		for key, value in self._value.iteritems():
+			evaluated[key] = value.actual_value(actual)
+		return evaluated
 
 class NoneCapsule(Capsule):
 	serial = 'none'
@@ -126,5 +191,12 @@ class NoneCapsule(Capsule):
 		return None
 
 HandleCapsule.register()
-RawCapsule.register()
+IntegerCapsule.register()
+BooleanCapsule.register()
+StringCapsule.register()
+UnicodeCapsule.register()
+ListCapsule.register()
+TupleCapsule.register()
+SetCapsule.register()
+DictionaryCapsule.register()
 NoneCapsule.register()

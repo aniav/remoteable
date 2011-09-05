@@ -106,11 +106,15 @@ class Test(unittest.TestCase):
 		remote_object = self.client.store(base)
 		self.assertEqual(int(remote_object), base)
 
-	@unittest.skip(1)
 	def test_store_list(self):
 		base = [30, 40]
 		remote_object = self.client.store(base)
 		self.assertEqual(list(remote_object), base)
+
+	def test_store_dict(self):
+		base = {"qwe": 30, "asd": 40}
+		remote_object = self.client.store(base)
+		self.assertEqual(dict(**remote_object), base)
 
 	def test_releasing(self):
 		base = 20

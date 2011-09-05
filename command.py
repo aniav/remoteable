@@ -61,9 +61,7 @@ class StoreCommand(Command):
 
 from remoteable.response import AttributeErrorResponse
 
-class GetAttributeCommand(Command):
-	serial = 'get'
-
+class GetCommand(Command):
 	def __init__(self, id, name):
 		Command.__init__(self)
 		self._id = id
@@ -74,6 +72,10 @@ class GetAttributeCommand(Command):
 			'id': self._id.hex,
 			'name': self._name.serialized(),
 		}
+
+	@classmethod
+	def getter(cls, obj, name):
+		raise NotImplementedError(cls)
 
 	@classmethod
 	def build(cls, data):
@@ -89,15 +91,28 @@ class GetAttributeCommand(Command):
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		try:
-			result = getattr(obj, resolved_name)
+			result = self.getter(obj, resolved_name)
 		except AttributeError, ex:
 			return AttributeErrorResponse(ex)
 		id = actual.store(result)
 		return HandleResponse(id)
 
-class SetAttributeCommand(Command):
-	serial = 'set'
 
+class GetAttributeCommand(GetCommand):
+	serial = 'attribute-get'
+
+	@classmethod
+	def getter(cls, obj, name):
+		return getattr(obj, name)
+
+class GetItemCommand(GetCommand):
+	serial = 'item-get'
+
+	@classmethod
+	def getter(cls, obj, name):
+		return obj.__getitem__(name)
+
+class SetCommand(Command):
 	def __init__(self, id, name, value):
 		Command.__init__(self)
 		self._id = id
@@ -110,6 +125,10 @@ class SetAttributeCommand(Command):
 			'name': self._name.serialized(),
 			'value': self._value.serialized(),
 		}
+
+	@classmethod
+	def setter(cls, obj, name, value):
+		raise NotImplementedError(cls)
 
 	@classmethod
 	def build(cls, data):
@@ -129,10 +148,24 @@ class SetAttributeCommand(Command):
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		try:
-			setattr(obj, resolved_name, resolved_value)
+			self.setter(obj, resolved_name, resolved_value)
 		except AttributeError, ex:
 			return AttributeErrorResponse(ex)
 		return EmptyResponse()
+
+class SetAttributeCommand(SetCommand):
+	serial = 'attribute-set'
+
+	@classmethod
+	def setter(cls, obj, name, value):
+		setattr(obj, name, value)
+
+class SetItemCommand(SetCommand):
+	serial = 'item-set'
+
+	@classmethod
+	def setter(cls, obj, name, value):
+		obj.__setitem__(name, value)
 
 from remoteable.response import OperationErrorResponse
 
@@ -195,22 +228,16 @@ class ExecuteCommand(Command):
 		self._kwargs = kwargs
 
 	def data(self):
-		prepared_args = [arg.serialized() for arg in self._args]
-		prepared_kwargs = {}
-		for key, value in self._kwargs.iteritems():
-			prepared_kwargs[key] = value.serialized()
 		return {
 			'id': self._id.hex,
-			'args': prepared_args,
-			'kwargs': prepared_kwargs,
+			'args': self._args.serialized(),
+			'kwargs': self._kwargs.serialized(),
 		}
 
 	@classmethod
 	def build(cls, data):
-		wrapped_args = [Capsule.construct(arg) for arg in data['args']]
-		wrapped_kwargs = {}
-		for key, value in data['kwargs']:
-			wrapped_kwargs[key] = Capsule.construct(value)
+		wrapped_args = Capsule.construct(data['args'])
+		wrapped_kwargs = Capsule.construct(data['kwargs'])
 		return cls(uuid.UUID(hex = data['id']), wrapped_args, wrapped_kwargs)
 
 	def execute(self, actual):
@@ -218,10 +245,8 @@ class ExecuteCommand(Command):
 			obj = actual.access(self._id)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
-		unwrapped_args = [arg.actual_value(actual) for arg in self._args]
-		unwrapped_kwargs = {}
-		for key, value in self._kwargs:
-			unwrapped_kwargs[key] = value.actual_value(actual)
+		unwrapped_args = self._args.actual_value(actual)
+		unwrapped_kwargs = self._kwargs.actual_value(actual)
 		try:
 			result = obj(*unwrapped_args, **unwrapped_kwargs)
 		#pylint: disable=W0703
@@ -287,6 +312,8 @@ FetchCommand.register()
 StoreCommand.register()
 GetAttributeCommand.register()
 SetAttributeCommand.register()
+GetItemCommand.register()
+SetItemCommand.register()
 OperatorCommand.register()
 ExecuteCommand.register()
 EvaluateCommand.register()
