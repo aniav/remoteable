@@ -3,6 +3,7 @@ import uuid
 from remoteable.response import Response
 from remoteable.serializable import Serializable
 
+
 class Command(Serializable):
 	_registry = {}
 
@@ -12,6 +13,7 @@ class Command(Serializable):
 	def push(self, proxy):
 		result = proxy.request(self.serialized())
 		return Response.construct(result)
+
 
 from remoteable.response import AccessErrorResponse, HandleResponse
 
@@ -28,13 +30,14 @@ class FetchCommand(Command):
 
 	def data(self):
 		return {'name': self._name}
-	
+
 	def execute(self, actual):
 		try:
 			id = actual.fetch(self._name)
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		return HandleResponse(id)
+
 
 from remoteable.capsule import Capsule
 
@@ -51,13 +54,14 @@ class StoreCommand(Command):
 
 	def data(self):
 		return {'data': self._obj.serialized()}
-	
+
 	def execute(self, actual):
 		try:
 			id = actual.store(self._obj.actual_value(actual))
 		except KeyError, ex:
 			return AccessErrorResponse(ex)
 		return HandleResponse(id)
+
 
 from remoteable.response import ErrorResponse # TODO
 
@@ -105,12 +109,14 @@ class GetAttributeCommand(GetCommand):
 	def getter(cls, obj, name):
 		return getattr(obj, name)
 
+
 class GetItemCommand(GetCommand):
 	serial = 'item-get'
 
 	@classmethod
 	def getter(cls, obj, name):
 		return obj.__getitem__(name)
+
 
 class SetCommand(Command):
 	def __init__(self, id, name, value):
@@ -132,7 +138,9 @@ class SetCommand(Command):
 
 	@classmethod
 	def build(cls, data):
-		return cls(uuid.UUID(hex = data['id']), Capsule.construct(data['name']), Capsule.construct(data['value']))
+		return cls(uuid.UUID(hex = data['id']),
+				   Capsule.construct(data['name']),
+				   Capsule.construct(data['value']))
 
 	def execute(self, actual):
 		try:
@@ -153,6 +161,7 @@ class SetCommand(Command):
 			return ErrorResponse(ex)
 		return EmptyResponse()
 
+
 class SetAttributeCommand(SetCommand):
 	serial = 'attribute-set'
 
@@ -160,12 +169,14 @@ class SetAttributeCommand(SetCommand):
 	def setter(cls, obj, name, value):
 		setattr(obj, name, value)
 
+
 class SetItemCommand(SetCommand):
 	serial = 'item-set'
 
 	@classmethod
 	def setter(cls, obj, name, value):
 		obj.__setitem__(name, value)
+
 
 from remoteable.response import OperationErrorResponse
 
@@ -192,7 +203,9 @@ class OperatorCommand(Command):
 
 	@classmethod
 	def build(cls, data):
-		return cls(uuid.UUID(hex = data['id']), Capsule.construct(data['other']), data['variant'])
+		return cls(uuid.UUID(hex = data['id']),
+				   Capsule.construct(data['other']),
+				   data['variant'])
 
 	def execute(self, actual):
 		try:
@@ -215,6 +228,7 @@ class OperatorCommand(Command):
 			return ExecutionErrorResponse(ex)
 		id = actual.store(result)
 		return HandleResponse(id)
+
 
 from remoteable.response import ExecutionErrorResponse
 
@@ -256,6 +270,7 @@ class ExecuteCommand(Command):
 		id = actual.store(result)
 		return HandleResponse(id)
 
+
 from remoteable.response import EvaluationResponse
 
 class EvaluateCommand(Command):
@@ -282,6 +297,7 @@ class EvaluateCommand(Command):
 		except KeyError as ex:
 			return AccessErrorResponse(ex)
 		return EvaluationResponse(Capsule.wrap(obj), self._variant)
+
 
 from remoteable.response import EmptyResponse
 

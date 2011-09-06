@@ -9,7 +9,7 @@ This library provides remoting in python-friendly way. It allows user to create 
 How to use it?
 --------------
 
-Consider following class simple tree-building class::
+Consider following simple tree-building class::
 
 	class Node(object):
 		def __init__(self, value, parent = None):
@@ -67,7 +67,7 @@ Client will immediately connect and will be ready to fetch handles::
 	>>> client_root
 	<RemoteHandle (d0d7177e-22f6-4476-9ed9-cec060fc7c79)> # may vary
 
-Fetched handle is a simple, pythonic object which delegates all operation to remote instance. There are a lot of implemented operations which can be simply done, like:
+Fetched handle is a simple, pythonic object which delegates all operations to a remote instance. There is a lot of implemented operations which can be simply done like:
 
 - dereferencing an attribute
 	>>> client_value = client_root.value
@@ -96,7 +96,7 @@ Fetched handle is a simple, pythonic object which delegates all operation to rem
 	>>> int(child.value + 4)
 	6
 
-- comparition
+- comparation
 	>>> result = (child == client_root.child(0))
 	>>> result
 	<RemoteHandle (2a33e675-a18e-4acb-b360-dcad69858638)>
@@ -113,7 +113,7 @@ Client can also store values on server::
 	>>> int(reference)
 	5
 
-Handles can be provided as a argument for operation with other handles::
+Handles can be provided as an argument for operations with other handles::
 
 	>>> client_root.value = reference
 	>>> int(client_root.value)

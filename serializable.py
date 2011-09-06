@@ -1,19 +1,21 @@
 class ConstructionError(Exception):
 	pass
 
+
 class UnknownSerialError(ConstructionError):
 	pass
 
+
 class Serializable(object):
 	serial = None
-	
+
 	_registry = {} 
 	# each immediate subclass should define its own registry
-	
+
 	@classmethod
 	def register(cls):
 		cls._registry[cls.serial] = cls
-	
+
 	@classmethod
 	def build(cls, data):
 		raise NotImplementedError(cls)
@@ -36,4 +38,3 @@ class Serializable(object):
 		except KeyError: 
 			raise UnknownSerialError(data['serial'])
 		return subclass.build(data)
-	

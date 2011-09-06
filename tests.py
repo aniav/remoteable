@@ -8,16 +8,18 @@ logging.basicConfig(level = logging.DEBUG)
 from remoteable.server import ThreadedRemotingServer
 from remoteable.client import RemotingClient
 
+
 class TestClass(object):
 	def __init__(self, value):
 		self.value = value
-	
+
 	def get_value(self):
 		return self.value
-	
+
 	def method(self, arg):
 		self.value += arg
 		return self.value
+
 
 import random
 

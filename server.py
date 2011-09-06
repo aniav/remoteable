@@ -5,6 +5,7 @@ import uuid
 
 from remoteable.command import Command
 
+
 class RemotingActual(object):
 	def __init__(self, name):
 		self._logger = logging.getLogger("actual.%s" % name)
@@ -34,10 +35,11 @@ class RemotingActual(object):
 
 	def access(self, id):
 		return self._references[id]
-	
+
 	def release(self, id):
 		del self._references[id]
-		
+
+
 from threading import Thread
 
 class RemoteHandler(Thread):
@@ -66,6 +68,7 @@ class RemoteHandler(Thread):
 	def stop(self):
 		self._socket.close()
 
+
 import socket
 
 class RemotingServer(RemotingActual):
@@ -82,18 +85,20 @@ class RemotingServer(RemotingActual):
 		try:
 			while True:
 				connected_socket, connected_address = self._socket.accept()
-				handler = RemoteHandler(self, connected_socket, connected_address)
+				handler = RemoteHandler(self, connected_socket,
+										connected_address)
 				handler.start()
 				self._handlers.append(handler)
 		except Exception:
 			self._logger.info("Stopping: Unhandled exception", exc_info = True)
 			self.stop()
 			raise
-	
+
 	def stop(self):
 		for handler in self._handlers:
 			handler.stop()		
 		return self._socket.close()
+
 
 class ThreadedRemotingServer(RemotingServer, Thread):
 	def __init__(self, server_address):

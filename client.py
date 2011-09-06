@@ -8,9 +8,10 @@ import json
 
 from remoteable.command import ExecuteCommand, GetAttributeCommand, SetAttributeCommand, GetItemCommand, SetItemCommand, OperatorCommand, EvaluateCommand, ReleaseCommand 
 
+
 class RemoteHandle(object):
 	__slots__ = ('_proxy', '_id')
-	
+
 	def __init__(self, proxy, id):
 		self._proxy = proxy
 		self._id = id
@@ -23,37 +24,38 @@ class RemoteHandle(object):
 	def __int__(self):
 		command = EvaluateCommand(self._id, 'int')
 		response = command.push(self._proxy)
-		return int(response.interpret(self._proxy))		
+		return int(response.interpret(self._proxy))
 
 	def __bool__(self):
 		command = EvaluateCommand(self._id, 'bool')
 		response = command.push(self._proxy)
 		return bool(response.interpret(self._proxy))
-	
+
 	__nonzero__ = __bool__	
 
 	def __str__(self):
 		command = EvaluateCommand(self._id, 'str')
 		response = command.push(self._proxy)
-		return str(response.interpret(self._proxy))		
+		return str(response.interpret(self._proxy))
 
 	def __unicode__(self):
 		command = EvaluateCommand(self._id, 'unicode')
 		response = command.push(self._proxy)
-		return str(response.interpret(self._proxy))		
+		return str(response.interpret(self._proxy))
 
 	def __eq__(self, other):
 		command = OperatorCommand(self._id, Capsule.wrap(other), 'equals')
 		response = command.push(self._proxy)
-		return response.interpret(self._proxy)	
+		return response.interpret(self._proxy)
 
 	def __add__(self, other):
 		command = OperatorCommand(self._id, Capsule.wrap(other), 'addition')
 		response = command.push(self._proxy)
-		return response.interpret(self._proxy)	
+		return response.interpret(self._proxy)
 
 	def __call__(self, *args, **kwargs):
-		command = ExecuteCommand(self._id, Capsule.wrap(args), Capsule.wrap(kwargs))
+		command = ExecuteCommand(self._id, Capsule.wrap(args),
+								 Capsule.wrap(kwargs))
 		response = command.push(self._proxy)
 		return response.interpret(self._proxy)
 
@@ -63,7 +65,8 @@ class RemoteHandle(object):
 		return response.interpret(self._proxy)
 
 	def __setitem__(self, key, value):
-		command = SetItemCommand(self._id, Capsule.wrap(key), Capsule.wrap(value))
+		command = SetItemCommand(self._id, Capsule.wrap(key),
+								 Capsule.wrap(value))
 		response = command.push(self._proxy)
 		return response.interpret(self._proxy)
 
@@ -75,17 +78,19 @@ class RemoteHandle(object):
 	def __setattr__(self, name, value):
 		if name in ['_id', '_proxy']:
 			return object.__setattr__(self, name, value)
-		command = SetAttributeCommand(self._id, Capsule.wrap(name), Capsule.wrap(value))
+		command = SetAttributeCommand(self._id, Capsule.wrap(name),
+									  Capsule.wrap(value))
 		response = command.push(self._proxy)
 		return response.interpret(self._proxy)
-	
+
 	def __del__(self):
 		command = ReleaseCommand(self._id)
 		response = command.push(self._proxy)
 		return response.interpret(self._proxy)
-		
+
 	def __repr__(self):
 		return "<RemoteHandle (%s)>" % (self._id,)
+
 
 class RemotingProxy(object):
 	def fetch(self, name):
@@ -100,7 +105,7 @@ class RemotingProxy(object):
 
 	def handle(self, id):
 		return RemoteHandle(self, id)
-	
+
 	def request(self, data):
 		self.send(data)
 		result = self.receive()
@@ -108,12 +113,13 @@ class RemotingProxy(object):
 
 	def send(self, data):
 		raise NotImplementedError(self)
-	
+
 	def receive(self):
 		raise NotImplementedError(self)
 
 	def __repr__(self):
 		return "<%s>" % (self.__class__.__name__)
+
 
 class RemotingClient(RemotingProxy):
 	def __init__(self, server_address):
@@ -125,7 +131,7 @@ class RemotingClient(RemotingProxy):
 	def send(self, data):
 		self._logger.debug("sending %s", data)
 		self._socket.send(json.dumps(data))
-	
+
 	def receive(self):
 		result = json.loads(self._socket.recv(65535))
 		self._logger.debug("received %s", result)
